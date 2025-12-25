@@ -1,1 +1,507 @@
-https://thug-e-mon.vercel.app/
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THUG-E-MON | GOD MODE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-color: #0a0a0a; --primary: #ffd700; --secondary: #ff3333; --accent: #00ffcc; --glass: rgba(255, 255, 255, 0.05); }
+        * { box-sizing: border-box; user-select: none; }
+        body { background-color: var(--bg-color); color: white; font-family: 'Roboto Mono', monospace; margin: 0; overflow: hidden; height: 100vh; }
+        .watermark { position: fixed; top: 10px; right: 10px; font-family: 'Permanent Marker'; color: rgba(255, 255, 255, 0.2); font-size: 1.5rem; z-index: 999; pointer-events: none; border: 2px solid rgba(255,255,255,0.1); padding: 5px 15px; transform: rotate(5deg); }
+        h1, h2, h3 { font-family: 'Permanent Marker', cursive; text-transform: uppercase; letter-spacing: 2px; }
+        .hidden { display: none !important; }
+        
+        /* UI COMPONENTS */
+        .btn { background: linear-gradient(45deg, #333, #000); border: 2px solid var(--primary); color: var(--primary); padding: 12px 24px; font-family: 'Permanent Marker', cursive; cursor: pointer; transition: 0.2s; margin: 5px; text-shadow: 0 0 5px var(--primary); }
+        .btn:hover { transform: scale(1.05); background: var(--primary); color: black; }
+        .btn-buy { border-color: #00ff00; color: #00ff00; }
+        .btn-equip { border-color: var(--accent); color: var(--accent); }
+        .btn-admin { border-color: #ff00ff; color: #ff00ff; font-size: 0.7rem; padding: 5px 10px; }
+        
+        .screen { width: 100%; height: 100%; position: absolute; top: 0; left: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle, #1a1a1a 0%, #000 100%); animation: fadeIn 0.4s; }
+        input { background: rgba(255,255,255,0.05); border: none; border-bottom: 2px solid var(--accent); color: white; font-size: 1.2rem; text-align: center; padding: 10px; outline: none; margin: 5px; }
+
+        .dashboard { display: grid; grid-template-columns: 1fr 2fr 1fr; width: 95%; height: 85%; gap: 15px; margin-top: 20px; }
+        .panel { background: var(--glass); border: 1px solid #333; padding: 15px; border-radius: 10px; overflow-y: auto; position: relative; }
+        
+        /* LEVEL EFFECTS */
+        .name-tag { font-weight: bold; padding: 2px 8px; border-radius: 4px; }
+        .lvl-1 { color: white; }
+        .lvl-5 { color: #00ff00; text-shadow: 0 0 5px #00ff00; }
+        .lvl-10 { color: #00ccff; text-shadow: 0 0 8px #00ccff; border: 1px solid #00ccff; }
+        .lvl-20 { color: #d400ff; text-shadow: 0 0 10px #d400ff; animation: pulse 2s infinite; }
+        .lvl-50 { color: gold; text-shadow: 0 0 15px gold; background: rgba(255,215,0,0.1); border: 1px solid gold; }
+
+        .xp-bar { width: 100%; height: 6px; background: #333; margin-top: 5px; border-radius: 3px; overflow: hidden; }
+        .xp-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.5s; }
+
+        /* SHOP & INVENTORY */
+        .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+        .shop-item { border: 1px solid #444; padding: 10px; text-align: center; border-radius: 5px; background: rgba(0,0,0,0.3); }
+        .inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px; margin-top: 10px; }
+        .inv-item { border: 2px solid #444; cursor: pointer; border-radius: 5px; overflow: hidden; height: 70px; }
+        .inv-item img { width: 100%; height: 100%; object-fit: cover; }
+        .inv-item.selected { border-color: var(--primary); box-shadow: 0 0 10px var(--primary); }
+
+        /* BATTLE */
+        .battle-arena { width: 100%; height: 100%; display: grid; grid-template-rows: 65% 35%; background: #111; position: relative; }
+        .field { display: flex; justify-content: space-between; padding: 40px; position: relative; }
+        .fighter-zone { position: relative; display: flex; flex-direction: column; align-items: center; }
+        .fighter-img { width: 220px; height: 280px; object-fit: contain; }
+        .hp-bar-container { width: 200px; height: 20px; background: #222; border: 2px solid #eee; margin: 10px 0; border-radius: 10px; overflow: hidden; }
+        .hp-fill { height: 100%; background: linear-gradient(90deg, #ff0000, #ffcc00); width: 100%; transition: width 0.4s; }
+        
+        .hud { background: #000; border-top: 4px solid var(--primary); display: grid; grid-template-columns: 1.5fr 2fr 1.2fr; padding: 10px; gap: 10px; }
+        .chat-container { display: flex; flex-direction: column; background: #050505; border: 1px solid #333; border-radius: 5px; overflow: hidden; }
+        #chat-box { flex-grow: 1; overflow-y: auto; padding: 5px; font-size: 0.8rem; color: #00ffcc; max-height: 120px; }
+        #chat-input { background: #111; border: none; border-top: 1px solid #333; color: white; padding: 8px; outline: none; }
+        
+        .emote-bar { display: flex; gap: 5px; padding: 5px; justify-content: center; background: rgba(255,255,255,0.05); }
+        .emote-btn { width: 35px; height: 35px; cursor: pointer; border: 1px solid #444; border-radius: 4px; }
+        .floating-emote { position: absolute; width: 100px; height: 100px; z-index: 200; animation: floatUp 2.5s forwards; pointer-events: none; top: 0; }
+        
+        /* ADMIN / GOD MODE EFFECTS */
+        #tinker-overlay-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; color: red; font-family: 'Permanent Marker'; z-index: 800; text-shadow: 0 0 20px red; pointer-events: none; text-align: center; width: 100%; }
+        #tinker-overlay-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 801; pointer-events: none; }
+        
+        .glitch-hp { animation: glitchAnim 0.2s infinite; background: #00ff00 !important; }
+        @keyframes glitchAnim { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); filter: hue-rotate(90deg); } 50% { transform: translateX(5px); filter: invert(1); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
+
+        #admin-battle-panel { position: absolute; top: 50px; right: 10px; background: rgba(0,0,0,0.8); border: 1px solid #ff00ff; padding: 10px; z-index: 900; width: 150px; }
+
+        /* WIN OVERLAY */
+        #win-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: black; z-index: 2000; display:flex; flex-direction:column; justify-content:center; align-items:center; }
+        #win-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.6; }
+        #win-content { z-index: 2001; text-align: center; }
+
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-120px); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <div class="watermark">v2.2 GOD MODE</div>
+
+    <div id="login-screen" class="screen">
+        <h1 style="font-size: 5rem; color: var(--primary);">THUG-E-MON</h1>
+        <div style="display:flex; flex-direction:column;">
+            <input type="text" id="username-input" placeholder="USERNAME" maxlength="12">
+            <input type="password" id="password-input" placeholder="PASSWORD">
+        </div>
+        <div><button class="btn" onclick="login()">LOGIN</button><button class="btn btn-danger" onclick="playGuest()">GUEST</button></div>
+    </div>
+
+    <div id="lobby-screen" class="screen hidden">
+        <div style="width: 100%; display: flex; justify-content: space-between; padding: 15px 30px; background: #000; border-bottom: 2px solid var(--primary);">
+            <div style="display:flex; flex-direction:column;">
+                <h2>USER: <span id="player-name-display"></span></h2>
+                <div style="font-size:0.8rem; color:#aaa;">LVL <span id="lvl-display">1</span> • WINS: <span id="wins-display">0</span></div>
+                <div class="xp-bar"><div class="xp-fill" id="xp-display"></div></div>
+            </div>
+            <div id="owner-panel" class="hidden"><button class="btn" style="border-color:var(--accent); color:var(--accent); font-size: 0.8rem;" onclick="adminGiveAllThugs()">OWNER: UNLOCK ALL</button></div>
+            <button class="btn btn-danger" onclick="logout()">LOGOUT</button>
+        </div>
+        <div class="dashboard">
+            <div class="panel"><h3>🏆 LEADERBOARD</h3><div id="leaderboard-list"></div></div>
+            <div class="panel" style="text-align: center;">
+                <h1 style="color: var(--primary);">BATTLE ARENA</h1>
+                <button class="btn" style="width: 90%;" onclick="startMatching('public')">PUBLIC SCRAP</button>
+                <div id="matchmaking-status" style="color: var(--accent); margin-top: 10px;"></div>
+                <input type="text" id="priv-code" placeholder="ROOM CODE" style="margin-top:20px;">
+                <button class="btn" onclick="startMatching(document.getElementById('priv-code').value)">JOIN ROOM</button>
+                <hr style="border-color:#333; margin: 20px 0;">
+                <h3>🛒 WIN SHOP</h3>
+                <div id="shop-grid" class="shop-grid"></div>
+            </div>
+            <div class="panel">
+                <h3>YOUR CREW</h3>
+                <button class="btn" style="color:var(--accent); border-color:var(--accent); width:100%; margin:0;" onclick="openDailyPack()">DAILY PACK</button>
+                <div id="inventory-grid" class="inventory-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="battle-screen" class="screen hidden">
+        <h1 id="tinker-overlay-text" class="hidden"></h1>
+        <img id="tinker-overlay-img" class="hidden" src="">
+        
+        <div id="admin-battle-panel" class="hidden">
+            <h5 style="margin:0; color:#ff00ff">ADMIN COMMANDS</h5>
+            <input id="adm-msg" placeholder="Msg" style="width:100%; font-size:0.8rem;">
+            <button class="btn btn-admin" onclick="admSendMsg()">SEND TEXT</button>
+            <button class="btn btn-admin" onclick="admToggleGlitch()">TOGGLE HP GLITCH</button>
+            <input id="adm-img" placeholder="Img URL" style="width:100%; font-size:0.8rem;">
+            <button class="btn btn-admin" onclick="admSendImg()">OVERLAY IMG</button>
+        </div>
+
+        <div id="spec-ui" style="position:absolute; top:20px; color:var(--accent); z-index:100;" class="hidden">👁️ <span id="spec-count">0</span></div>
+        <div class="battle-arena">
+            <div class="field">
+                <div class="fighter-zone" id="enemy-zone"><h3 id="enemy-name">OPPONENT</h3><div class="hp-bar-container"><div class="hp-fill" id="enemy-hp"></div></div><img id="enemy-img" class="fighter-img" src=""></div>
+                <div class="fighter-zone" id="player-zone"><img id="player-img" class="fighter-img" src=""><div class="hp-bar-container"><div class="hp-fill" id="player-hp"></div></div><h3 id="my-fighter-name">ME</h3></div>
+            </div>
+            <div class="hud">
+                <div class="chat-container">
+                    <div id="chat-box"></div>
+                    <div class="emote-bar">
+                        <img class="emote-btn" src="https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/7bdea9542ef17e55825a9ff38ced6784c1364702/IMG_1582.gif" onclick="sendEmote('doctos')">
+                        <img class="emote-btn" src="https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/7bdea9542ef17e55825a9ff38ced6784c1364702/IMG_1578.gif" onclick="sendEmote('silly')">
+                        <img class="emote-btn" src="https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/7bdea9542ef17e55825a9ff38ced6784c1364702/IMG_1514.gif" onclick="sendEmote('packwatch')">
+                        <img class="emote-btn" src="https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/7bdea9542ef17e55825a9ff38ced6784c1364702/IMG_1494.gif" onclick="sendEmote('copno')">
+                        <img class="emote-btn" src="https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/7bdea9542ef17e55825a9ff38ced6784c1364702/IMG_1489.gif" onclick="sendEmote('coal')">
+                    </div>
+                    <input type="text" id="chat-input" placeholder="Talk trash..." onkeydown="if(event.key==='Enter') sendChat()">
+                </div>
+                <div class="move-panel" id="move-buttons" style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;"></div>
+                <button class="btn btn-danger" onclick="location.reload()">LEAVE</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="win-overlay" class="hidden">
+        <video id="win-video" loop muted></video>
+        <div id="win-content">
+            <h1 id="win-text" style="font-size: 5rem; color: var(--primary); text-shadow: 2px 2px 0 #000;">VICTORY!</h1>
+            <h2 id="win-xp" style="color: var(--accent); text-shadow: 1px 1px 0 #000;">+100 XP</h2>
+            <button class="btn" onclick="location.reload()">BACK TO LOBBY</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getDatabase, ref, set, get, onValue, update, remove, push, onDisconnect } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyAPI4KkZ6SCTloUFbZSROIq1neHZJUG4h8", authDomain: "thugemon.firebaseapp.com", projectId: "thugemon", databaseURL: "https://thugemon-default-rtdb.firebaseio.com", appId: "1:102057383382:web:9ef9619ff9888f11544077" };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- GAME DATA ---
+        const THUGS = {
+            "Dreamybull": { img: `https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/361d276e95bdf548f1d8c72932ef5698d84081fd/IMG_1637.jpeg`, hp: 120, moves: [{n:"Ambatukam", p:35}, {n:"Blowing", p:25}, {n:"Creamer", p:20, t:'h'}] },
+            "Pop Monster": { img: `https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/361d276e95bdf548f1d8c72932ef5698d84081fd/IMG_1667.jpeg`, hp: 130, moves: [{n:"Blast", p:40}, {n:"Fling", p:20}, {n:"Fiber", p:25, t:'h'}] },
+            "Cado": { img: `https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/361d276e95bdf548f1d8c72932ef5698d84081fd/IMG_1668.png`, hp: 160, moves: [{n:"Mukbang", p:30}, {n:"Rage", p:45}, {n:"Heart", p:35, t:'h'}] },
+            "Yes King": { img: `https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/361d276e95bdf548f1d8c72932ef5698d84081fd/IMG_1638.webp`, hp: 110, moves: [{n:"Royal Slam", p:35}, {n:"King Pose", p:20}, {n:"Blessing", p:30, t:'h'}] },
+            "Atlas Toby": { img: `https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/7bdea9542ef17e55825a9ff38ced6784c1364702/IMG_1633.jpeg`, hp: 115, moves: [{n:"Aimbot", p:30}, {n:"Shoot", p:25}, {n:"Debug", p:25, t:'h'}] },
+            "Brandon Barber": { img: `https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/7bdea9542ef17e55825a9ff38ced6784c1364702/IMG_1666.png`, hp: 125, moves: [{n:"Fade", p:28}, {n:"Line Up", p:32}, {n:"Hot Towel", p:22, t:'h'}] },
+            "Bo Sinn": { img: "https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/b521f5db2d7ecc35dca652918b1b1710cfd4c304/IMG_1690.jpeg", hp: 140, moves: [{n:"Jab", p:30}, {n:"Hook", p:40}, {n:"Dodge", p:30, t:'h'}] },
+            "Floyd": { img: "https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/b521f5db2d7ecc35dca652918b1b1710cfd4c304/IMG_1280.png", hp: 125, moves: [{n:"Air Strike", p:35}, {n:"Gust", p:25}, {n:"Float", p:25, t:'h'}] },
+            "Mega Floyd": { img: "https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/b521f5db2d7ecc35dca652918b1b1710cfd4c304/527F8A49-6185-4274-B72F-A5320C544A78.jpeg", hp: 180, moves: [{n:"Hurricane", p:50}, {n:"Pressure", p:40}, {n:"Oxygen", p:40, t:'h'}] }
+        };
+
+        const SHOP_VIDEOS = {
+            "v1": { name: "Atlas Dance", price: 5, url: "https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/b521f5db2d7ecc35dca652918b1b1710cfd4c304/atlastoby2x4_Er2FNYya_1.mp4" },
+            "v2": { name: "The Attachment", price: 8, url: "https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/b521f5db2d7ecc35dca652918b1b1710cfd4c304/attachment.mov" },
+            "v3": { name: "Albino Flow", price: 12, url: "https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/b521f5db2d7ecc35dca652918b1b1710cfd4c304/albino_2_1_1.mp4" },
+            "v4": { name: "Victory Lap", price: 15, url: "https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/b521f5db2d7ecc35dca652918b1b1710cfd4c304/jlxlcFvm.mp4" }
+        };
+
+        const EMOTE_URLS = { doctos: "https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/7bdea9542ef17e55825a9ff38ced6784c1364702/IMG_1582.gif", silly: "https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/7bdea9542ef17e55825a9ff38ced6784c1364702/IMG_1578.gif", packwatch: "https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/7bdea9542ef17e55825a9ff38ced6784c1364702/IMG_1514.gif", copno: "https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/7bdea9542ef17e55825a9ff38ced6784c1364702/IMG_1494.gif", coal: "https://raw.githubusercontent.com/gtatacotruck/Thug-e-mon/7bdea9542ef17e55825a9ff38ced6784c1364702/IMG_1489.gif" };
+
+        let currentUser = null;
+        let selectedThugKey = "Dreamybull";
+        let currentBattleId = null;
+        let isSpectating = false;
+        let prevEmoteId = null;
+        let battleEnded = false;
+
+        window.onload = () => {
+            const saved = localStorage.getItem('thugemon_user');
+            if(saved) { currentUser = JSON.parse(saved); initLobby(); refreshUserData(); }
+            updateLeaderboard();
+        };
+
+        async function refreshUserData() {
+            if(!currentUser || currentUser.username.startsWith("Guest_")) return;
+            const s = await get(ref(db, 'users/' + currentUser.username));
+            if(s.exists()) { 
+                currentUser = s.val(); 
+                if(!currentUser.xp) currentUser.xp = 0;
+                if(!currentUser.level) currentUser.level = 1;
+                if(!currentUser.myVids) currentUser.myVids = [];
+                localStorage.setItem('thugemon_user', JSON.stringify(currentUser)); 
+                renderUI(); 
+            }
+        }
+
+        window.login = async () => {
+            let u = document.getElementById('username-input').value.trim();
+            const p = document.getElementById('password-input').value.trim();
+            if(!u) return;
+            u = u.replace(/[.#$/[\]]/g, ""); 
+            const snap = await get(ref(db, 'users/' + u));
+            if(snap.exists()) { 
+                if(snap.val().password !== p) return alert("Wrong PW"); 
+                currentUser = snap.val(); 
+            } else { 
+                currentUser = { username: u, password: p, wins: 0, xp:0, level:1, inventory: ["Dreamybull"], lastPack: 0, myVids: [], equippedVid: null }; 
+                await set(ref(db, 'users/' + u), currentUser); 
+            }
+            localStorage.setItem('thugemon_user', JSON.stringify(currentUser));
+            initLobby();
+        };
+
+        window.playGuest = () => { currentUser = { username: "Guest_" + Math.floor(Math.random()*999), wins: 0, xp:0, level:1, inventory: ["Dreamybull"] }; initLobby(); };
+        window.logout = () => { localStorage.removeItem('thugemon_user'); location.reload(); };
+
+        function initLobby() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('lobby-screen').classList.remove('hidden');
+            if(currentUser.username === "GTAtacotruck") document.getElementById('owner-panel').classList.remove('hidden');
+            renderUI();
+            updateLeaderboard();
+        }
+
+        function renderUI() {
+            const nameEl = document.getElementById('player-name-display');
+            nameEl.innerText = currentUser.username;
+            nameEl.className = `name-tag lvl-${currentUser.level >= 50 ? 50 : (currentUser.level >= 20 ? 20 : (currentUser.level >= 10 ? 10 : (currentUser.level >= 5 ? 5 : 1)))}`;
+            
+            document.getElementById('lvl-display').innerText = currentUser.level || 1;
+            document.getElementById('wins-display').innerText = currentUser.wins || 0;
+            
+            const xp = currentUser.xp || 0;
+            const xpNeeded = 500;
+            const progress = (xp % xpNeeded) / xpNeeded * 100;
+            document.getElementById('xp-display').style.width = progress + "%";
+
+            const grid = document.getElementById('inventory-grid'); grid.innerHTML = "";
+            (currentUser.inventory || []).forEach(k => {
+                if(!THUGS[k]) return;
+                const d = document.createElement('div'); d.className = `inv-item ${k === selectedThugKey ? 'selected' : ''}`;
+                d.innerHTML = `<img src="${THUGS[k].img}">`; d.onclick = () => { selectedThugKey = k; renderUI(); };
+                grid.appendChild(d);
+            });
+
+            const shop = document.getElementById('shop-grid'); shop.innerHTML = "";
+            Object.keys(SHOP_VIDEOS).forEach(key => {
+                const vid = SHOP_VIDEOS[key];
+                const owned = (currentUser.myVids || []).includes(key);
+                const equipped = currentUser.equippedVid === key;
+                const d = document.createElement('div'); d.className = "shop-item";
+                d.innerHTML = `<h4>${vid.name}</h4><div style="font-size:0.7rem; color:var(--primary);">${vid.price} WINS</div>`;
+                const btn = document.createElement('button');
+                btn.className = "btn"; btn.style.fontSize = "0.7rem"; btn.style.padding = "5px";
+                if(owned) {
+                    if(equipped) { btn.innerText = "EQUIPPED"; btn.disabled = true; }
+                    else { btn.innerText = "EQUIP"; btn.className += " btn-equip"; btn.onclick = () => equipVideo(key); }
+                } else {
+                    btn.innerText = "BUY"; btn.className += " btn-buy"; btn.onclick = () => buyVideo(key);
+                }
+                d.appendChild(btn); shop.appendChild(d);
+            });
+        }
+
+        window.buyVideo = async (key) => {
+            const price = SHOP_VIDEOS[key].price;
+            if(currentUser.wins < price) return alert("Not enough Wins!");
+            if(!confirm(`Buy ${SHOP_VIDEOS[key].name} for ${price} wins?`)) return;
+            currentUser.wins -= price;
+            if(!currentUser.myVids) currentUser.myVids = [];
+            currentUser.myVids.push(key);
+            await update(ref(db, `users/${currentUser.username}`), { wins: currentUser.wins, myVids: currentUser.myVids });
+            renderUI();
+        };
+
+        window.equipVideo = async (key) => {
+            currentUser.equippedVid = key;
+            await update(ref(db, `users/${currentUser.username}`), { equippedVid: key });
+            renderUI();
+        };
+
+        function updateLeaderboard() {
+            onValue(ref(db, 'users'), (snap) => {
+                const users = snap.val(); if(!users) return;
+                const sorted = Object.values(users).sort((a,b) => b.wins - a.wins).slice(0,10);
+                document.getElementById('leaderboard-list').innerHTML = sorted.map((u,i) => {
+                    const lvlClass = u.level >= 20 ? 'lvl-20' : (u.level >= 10 ? 'lvl-10' : '');
+                    return `<div class="rank-item"><span class="${lvlClass}">#${i+1} ${u.username} [L${u.level||1}]</span><span>${u.wins}W</span></div>`
+                }).join('');
+            });
+        }
+
+        window.openDailyPack = async () => {
+            if(currentUser.username.startsWith("Guest_")) return alert("Login first!");
+            const now = Date.now();
+            if(now - (currentUser.lastPack || 0) < 86400000) return alert("Wait for reset!");
+            const reward = Object.keys(THUGS)[Math.floor(Math.random()*Object.keys(THUGS).length)];
+            if(!currentUser.inventory.includes(reward)) currentUser.inventory.push(reward);
+            currentUser.lastPack = now;
+            await update(ref(db, `users/${currentUser.username}`), { inventory: currentUser.inventory, lastPack: now });
+            localStorage.setItem('thugemon_user', JSON.stringify(currentUser));
+            alert("PULLED: " + reward); renderUI();
+        };
+
+        window.adminGiveAllThugs = async () => {
+            currentUser.inventory = Object.keys(THUGS);
+            currentUser.wins = 999; currentUser.xp = 50000; currentUser.level = 50; 
+            await update(ref(db, `users/${currentUser.username}`), { inventory: currentUser.inventory, wins: currentUser.wins, xp: currentUser.xp, level: currentUser.level });
+            renderUI(); alert("Admin Power Used!");
+        };
+
+        // --- BATTLE SYSTEM ---
+        window.startMatching = async (room) => {
+            if(!room) return;
+            const qRef = ref(db, `queue/${room}`);
+            const qSnap = await get(qRef);
+            const matches = (await get(ref(db, 'battles'))).val() || {};
+            let activeBattle = Object.keys(matches).find(id => matches[id].room === room && matches[id].status === 'live');
+
+            if(activeBattle) { if(confirm("Spectate?")) { isSpectating = true; enterBattle(activeBattle, matches[activeBattle]); return; } return; }
+
+            if(qSnap.exists() && qSnap.val().u !== currentUser.username) {
+                const host = qSnap.val(); await remove(qRef);
+                const bId = push(ref(db, 'battles')).key;
+                await set(ref(db, `battles/${bId}`), { hN: host.u, jN: currentUser.username, hT: host.t, jT: selectedThugKey, hH: THUGS[host.t].hp, jH: THUGS[selectedThugKey].hp, turn: host.u, status: 'live', room: room, chat: {} });
+            } else {
+                set(qRef, { u: currentUser.username, t: selectedThugKey });
+                onDisconnect(qRef).remove();
+                document.getElementById('matchmaking-status').innerText = "WAITING...";
+            }
+            onValue(ref(db, 'battles'), s => { const d=s.val(); for(let id in d) if((d[id].hN===currentUser.username||d[id].jN===currentUser.username)&&d[id].status==='live') enterBattle(id, d[id]); });
+        };
+
+        function enterBattle(id, data) {
+            currentBattleId = id;
+            battleEnded = false;
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('battle-screen').classList.remove('hidden');
+            
+            // Show Admin Panel if Owner
+            if(currentUser.username === "GTAtacotruck") document.getElementById('admin-battle-panel').classList.remove('hidden');
+
+            const isHost = data.hN === currentUser.username;
+            if(!isSpectating) onDisconnect(ref(db, `battles/${id}/status`)).set("disconnected");
+
+            if(isSpectating) {
+                const sRef = ref(db, `battles/${id}/spectators/${currentUser.username.replace(/\W/g,'')}`);
+                set(sRef, true); onDisconnect(sRef).remove();
+                document.getElementById('move-buttons').innerHTML = "<h3>SPECTATING</h3>";
+            } else {
+                const mBox = document.getElementById('move-buttons'); mBox.innerHTML = "";
+                THUGS[selectedThugKey].moves.forEach(m => {
+                    const b = document.createElement('button'); b.className = 'btn'; b.style.fontSize = "0.7rem"; b.innerText = m.n;
+                    b.onclick = () => executeTurn(m, isHost); mBox.appendChild(b);
+                });
+            }
+
+            // LISTEN FOR GOD MODE TINKERING
+            onValue(ref(db, `battles/${id}/tinker`), (snap) => {
+                const val = snap.val();
+                if(!val) return;
+                
+                // Message Overlay
+                const msgEl = document.getElementById('tinker-overlay-text');
+                if(val.msg) { msgEl.innerText = val.msg; msgEl.classList.remove('hidden'); setTimeout(() => msgEl.classList.add('hidden'), 3000); }
+                
+                // Image Overlay
+                const imgEl = document.getElementById('tinker-overlay-img');
+                if(val.img) { imgEl.src = val.img; imgEl.classList.remove('hidden'); setTimeout(() => imgEl.classList.add('hidden'), 2000); }
+
+                // HP Glitch
+                const hpBars = document.querySelectorAll('.hp-fill');
+                if(val.glitch) { hpBars.forEach(b => b.classList.add('glitch-hp')); } 
+                else { hpBars.forEach(b => b.classList.remove('glitch-hp')); }
+            });
+
+            onValue(ref(db, `battles/${id}`), async (s) => {
+                const b = s.val();
+                
+                // NO SPAM: If null/disconnected, handle once then stop
+                if(!b || b.status === "disconnected") { 
+                    if(battleEnded) return; 
+                    battleEnded = true; 
+                    document.getElementById('win-overlay').classList.remove('hidden');
+                    document.getElementById('win-text').innerText = "DISCONNECTED";
+                    document.getElementById('win-xp').innerText = "";
+                    if(isHost) remove(ref(db, `battles/${id}`)); 
+                    return; 
+                }
+
+                const sc = b.spectators ? Object.keys(b.spectators).length : 0;
+                document.getElementById('spec-ui').classList.remove('hidden'); document.getElementById('spec-count').innerText = sc;
+
+                document.getElementById('enemy-name').innerText = isHost ? b.jN : b.hN;
+                document.getElementById('my-fighter-name').innerText = isHost ? b.hN : b.jN;
+                document.getElementById('enemy-hp').style.width = (isHost ? b.jH/THUGS[b.jT].hp : b.hH/THUGS[b.hT].hp) * 100 + "%";
+                document.getElementById('player-hp').style.width = (isHost ? b.hH/THUGS[b.hT].hp : b.jH/THUGS[b.jT].hp) * 100 + "%";
+                document.getElementById('enemy-img').src = THUGS[isHost ? b.jT : b.hT].img;
+                document.getElementById('player-img').src = THUGS[isHost ? b.hT : b.jT].img;
+
+                if(!isSpectating) {
+                    document.getElementById('move-buttons').style.opacity = (b.turn === currentUser.username) ? "1" : "0.5";
+                    document.getElementById('move-buttons').style.pointerEvents = (b.turn === currentUser.username) ? "auto" : "none";
+                }
+
+                if(b.chat) { const cb = document.getElementById('chat-box'); cb.innerHTML = Object.values(b.chat).map(c=>`<div><strong>${c.u}:</strong> ${c.m}</div>`).join(''); cb.scrollTop = cb.scrollHeight; }
+                if(b.lastEmote && b.lastEmote.id !== prevEmoteId) {
+                    prevEmoteId = b.lastEmote.id;
+                    const zone = b.lastEmote.u === (isHost ? b.jN : b.hN) ? "enemy-zone" : "player-zone";
+                    const eImg = document.createElement('img'); eImg.src = EMOTE_URLS[b.lastEmote.t]; eImg.className = "floating-emote";
+                    document.getElementById(zone).appendChild(eImg); setTimeout(() => eImg.remove(), 2500);
+                }
+
+                if(b.hH <= 0 || b.jH <= 0) {
+                    if(battleEnded) return; battleEnded = true;
+                    const winner = b.hH <= 0 ? b.jN : b.hN;
+                    document.getElementById('win-overlay').classList.remove('hidden');
+                    document.getElementById('win-text').innerText = winner === currentUser.username ? "VICTORY!" : "DEFEATED!";
+                    
+                    if(currentUser.username === winner && !isSpectating) {
+                        const newWins = (currentUser.wins || 0) + 1;
+                        let newXP = (currentUser.xp || 0) + 100;
+                        let newLevel = Math.floor(newXP / 500) + 1;
+                        await update(ref(db, `users/${currentUser.username}`), { wins: newWins, xp: newXP, level: newLevel });
+                        if(currentUser.equippedVid && SHOP_VIDEOS[currentUser.equippedVid]) {
+                            const vidEl = document.getElementById('win-video');
+                            vidEl.src = SHOP_VIDEOS[currentUser.equippedVid].url;
+                            vidEl.play();
+                        }
+                    }
+                    if(isHost) setTimeout(() => remove(ref(db, `battles/${id}`)), 5000);
+                }
+            });
+        }
+
+        async function executeTurn(m, isHost) {
+            const bRef = ref(db, `battles/${currentBattleId}`);
+            const b = (await get(bRef)).val(); if(!b) return;
+            if(b.turn !== currentUser.username) return; 
+
+            let up = { turn: isHost ? b.jN : b.hN };
+            if(m.t === 'h') { if(isHost) up.hH = Math.min(THUGS[b.hT].hp, b.hH + m.p); else up.jH = Math.min(THUGS[b.jT].hp, b.jH + m.p); }
+            else { if(isHost) up.jH = Math.max(0, b.jH - m.p); else up.hH = Math.max(0, b.hH - m.p); }
+            update(bRef, up);
+        }
+
+        window.sendChat = () => {
+            const inp = document.getElementById('chat-input');
+            const msg = inp.value.trim().substring(0, 50);
+            if(!msg || !currentBattleId) return;
+            push(ref(db, `battles/${currentBattleId}/chat`), { u: currentUser.username, m: msg });
+            inp.value = "";
+        };
+
+        window.sendEmote = (t) => { if(currentBattleId) update(ref(db, `battles/${currentBattleId}`), { lastEmote: { u: currentUser.username, t: t, id: Math.random() } }); };
+
+        // --- ADMIN FUNCTIONS ---
+        window.admSendMsg = () => {
+            const msg = document.getElementById('adm-msg').value;
+            if(currentBattleId) update(ref(db, `battles/${currentBattleId}/tinker`), { msg: msg });
+        };
+        window.admToggleGlitch = async () => {
+            if(!currentBattleId) return;
+            const refT = ref(db, `battles/${currentBattleId}/tinker/glitch`);
+            const s = await get(refT);
+            set(refT, !s.val());
+        };
+        window.admSendImg = () => {
+            const img = document.getElementById('adm-img').value;
+            if(currentBattleId) update(ref(db, `battles/${currentBattleId}/tinker`), { img: img });
+        };
+    </script>
+</body>
+</html>
+
